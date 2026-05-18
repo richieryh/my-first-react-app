@@ -56,6 +56,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [selectedPastRecord, setSelectedPastRecord] = useState<AttendanceRecord | null>(null);
   const [futurePaidLeaveDate, setFuturePaidLeaveDate] = useState<string>(getTomorrow());
+  const [dismissedWarningIds, setDismissedWarningIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setMounted(true);
@@ -76,6 +77,9 @@ export default function Home() {
   const pastRecords = records
     .filter((r) => r.date !== today)
     .sort((a, b) => b.date.localeCompare(a.date));
+  const missedClockOutRecords = pastRecords.filter(
+    (r) => r.clockIn && !r.clockOut && !r.isPaidLeave && !dismissedWarningIds.has(r.id)
+  );
   const futurePaidLeaveHasRecord = !!records.find((r) => r.date === futurePaidLeaveDate);
 
   function toggleLang() {
@@ -181,6 +185,35 @@ export default function Home() {
       </header>
 
       <main className="max-w-xl mx-auto px-4 py-6 space-y-5">
+        {/* 退勤未記録バナー */}
+        {mounted && missedClockOutRecords.map((record) => (
+          <div
+            key={record.id}
+            className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex items-start gap-3"
+          >
+            <span className="text-2xl">⚠️</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-800">
+                {formatDate(record.date, lang)}&nbsp;{t.status.missedClockOutTitle}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setSelectedPastRecord(record)}
+                className="text-xs font-semibold bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors"
+              >
+                {t.status.missedClockOutFix}
+              </button>
+              <button
+                onClick={() => setDismissedWarningIds((prev) => new Set([...prev, record.id]))}
+                className="text-xs font-semibold text-amber-600 hover:text-amber-800 transition-colors px-1"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        ))}
+
         {/* 出勤前: 出勤フォーム */}
         {!hasClockedIn && (
           <div className="bg-white rounded-2xl shadow-sm p-6 space-y-5">
