@@ -62,13 +62,13 @@ export default function RecordDetailModal({
   }, [date]);
 
   function handleRetroClockOut() {
-    if (!record || !retroTime || !retroMood || !retroMessage.trim()) return;
+    if (!record || !retroTime || !retroMood) return;
     const updated: AttendanceRecord = {
       ...record,
       clockOut: {
         time: new Date(`${date}T${retroTime}:00`).toISOString(),
         mood: retroMood,
-        message: retroMessage.trim(),
+        message: retroMessage.trim() || t.efforts[retroMood],
       },
     };
     onUpdateRecord(updated);
@@ -76,8 +76,8 @@ export default function RecordDetailModal({
   }
 
   function handleNewRecord() {
-    const clockInFilled = newClockInTime && newClockInMood && newClockInMessage.trim();
-    const clockOutFilled = retroTime && retroMood && retroMessage.trim();
+    const clockInFilled = newClockInTime && newClockInMood;
+    const clockOutFilled = retroTime && retroMood;
     if (!clockInFilled && !clockOutFilled) return;
 
     const newRecord: AttendanceRecord = {
@@ -88,7 +88,7 @@ export default function RecordDetailModal({
             clockIn: {
               time: new Date(`${date}T${newClockInTime}:00`).toISOString(),
               mood: newClockInMood!,
-              message: newClockInMessage.trim(),
+              message: newClockInMessage.trim() || t.moods[newClockInMood!],
             },
           }
         : {}),
@@ -97,7 +97,7 @@ export default function RecordDetailModal({
             clockOut: {
               time: new Date(`${date}T${retroTime}:00`).toISOString(),
               mood: retroMood!,
-              message: retroMessage.trim(),
+              message: retroMessage.trim() || t.efforts[retroMood!],
             },
           }
         : {}),
@@ -112,8 +112,8 @@ export default function RecordDetailModal({
   }
 
   const canSaveNew =
-    !!(newClockInTime && newClockInMood && newClockInMessage.trim()) ||
-    !!(retroTime && retroMood && retroMessage.trim());
+    !!(newClockInTime && newClockInMood) ||
+    !!(retroTime && retroMood);
 
   return (
     <div
@@ -216,7 +216,7 @@ export default function RecordDetailModal({
                     </div>
                     <button
                       onClick={handleRetroClockOut}
-                      disabled={!retroTime || !retroMood || !retroMessage.trim()}
+                      disabled={!retroTime || !retroMood}
                       className="w-full bg-purple-600 text-white py-2 rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors"
                     >
                       {t.status.retroClockOutSave}

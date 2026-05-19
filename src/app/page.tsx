@@ -123,14 +123,14 @@ export default function Home() {
   }
 
   function handleClockIn() {
-    if (!clockInMood || !clockInMessage.trim()) return;
+    if (!clockInMood) return;
     const record: AttendanceRecord = {
       id: crypto.randomUUID(),
       date: today,
       clockIn: {
         time: new Date().toISOString(),
         mood: clockInMood,
-        message: clockInMessage.trim(),
+        message: clockInMessage.trim() || t.moods[clockInMood],
       },
     };
     saveRecords([record, ...records]);
@@ -139,13 +139,13 @@ export default function Home() {
   }
 
   function handleClockOut() {
-    if (!clockOutMood || !clockOutMessage.trim() || !todayRecord) return;
+    if (!clockOutMood || !todayRecord) return;
     const updated: AttendanceRecord = {
       ...todayRecord,
       clockOut: {
         time: new Date().toISOString(),
         mood: clockOutMood,
-        message: clockOutMessage.trim(),
+        message: clockOutMessage.trim() || t.efforts[clockOutMood],
       },
     };
     saveRecords(records.map((r) => (r.id === todayRecord.id ? updated : r)));
@@ -241,7 +241,7 @@ export default function Home() {
             </div>
             <button
               onClick={handleClockIn}
-              disabled={!clockInMood || !clockInMessage.trim()}
+              disabled={!clockInMood}
               className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-700 transition-colors"
             >
               {t.clockIn.button}
@@ -312,7 +312,7 @@ export default function Home() {
               </div>
               <button
                 onClick={handleClockOut}
-                disabled={!clockOutMood || !clockOutMessage.trim()}
+                disabled={!clockOutMood}
                 className="w-full bg-purple-600 text-white py-3 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors"
               >
                 {t.clockOut.button}

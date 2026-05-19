@@ -57,14 +57,14 @@ export const translations: Record<Lang, Translations> = {
     clockIn: {
       title: '出勤打刻',
       moodQuestion: '今日の調子は？',
-      messageLabel: '今日の意気込みを一言',
+      messageLabel: '今日の意気込みを一言（任意）',
       messagePlaceholder: '今日も頑張ります！',
       button: '出勤打刻する',
     },
     clockOut: {
       title: '退勤打刻',
       moodQuestion: '今日の仕事はどうだった？',
-      messageLabel: '今日を振り返って一言',
+      messageLabel: '今日を振り返って一言（任意）',
       messagePlaceholder: '今日もお疲れ様でした！',
       button: '退勤打刻する',
     },
@@ -104,14 +104,14 @@ export const translations: Record<Lang, Translations> = {
     clockIn: {
       title: 'Clock In',
       moodQuestion: 'How are you feeling today?',
-      messageLabel: 'Your motivation for today',
+      messageLabel: 'Your motivation for today (optional)',
       messagePlaceholder: "Let's have a great day!",
       button: 'Clock In',
     },
     clockOut: {
       title: 'Clock Out',
       moodQuestion: 'How was work today?',
-      messageLabel: 'A word to wrap up your day',
+      messageLabel: 'A word to wrap up your day (optional)',
       messagePlaceholder: 'Great work today!',
       button: 'Clock Out',
     },
