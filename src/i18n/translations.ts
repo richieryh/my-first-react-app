@@ -42,6 +42,18 @@ export interface Translations {
     missedClockOutTitle: string;
     missedClockOutFix: string;
   };
+  paidLeaveBalance: {
+    title: string;
+    granted: string;
+    used: string;
+    remaining: string;
+    editTitle: string;
+    save: string;
+    cancel: string;
+    daysUnit: string;
+    yearLabel: (year: number) => string;
+    overUsed: string;
+  };
   moods: Record<MoodLevel, string>;
   efforts: Record<MoodLevel, string>;
   calendar: {
@@ -91,6 +103,18 @@ export const translations: Record<Lang, Translations> = {
       missedClockOutTitle: 'の退勤が記録されていません',
       missedClockOutFix: '退勤を入力する',
     },
+    paidLeaveBalance: {
+      title: '有給残日数',
+      granted: '付与日数',
+      used: '取得済み',
+      remaining: '残日数',
+      editTitle: '年間付与日数を設定',
+      save: '保存',
+      cancel: 'キャンセル',
+      daysUnit: '日',
+      yearLabel: (year: number) => `${year}年の有給`,
+      overUsed: '超過',
+    },
     moods: { 5: '絶好調', 4: '好調', 3: '普通', 2: '不調', 1: '絶不調' },
     efforts: { 5: '超頑張った', 4: '頑張った', 3: 'まあまあ', 2: 'もうちょっと', 1: 'あんまり' },
     calendar: {
@@ -137,6 +161,18 @@ export const translations: Record<Lang, Translations> = {
       futurePaidLeaveAlreadyExists: 'A record already exists for this date',
       missedClockOutTitle: 'clock-out is not recorded',
       missedClockOutFix: 'Enter Clock-out',
+    },
+    paidLeaveBalance: {
+      title: 'Paid Leave Balance',
+      granted: 'Granted',
+      used: 'Used',
+      remaining: 'Remaining',
+      editTitle: 'Set Annual Paid Leave Days',
+      save: 'Save',
+      cancel: 'Cancel',
+      daysUnit: ' days',
+      yearLabel: (year: number) => `${year} Paid Leave`,
+      overUsed: 'Over',
     },
     moods: { 5: 'Amazing', 4: 'Good', 3: 'Okay', 2: 'Not Great', 1: 'Rough' },
     efforts: { 5: 'Crushed It', 4: 'Worked Hard', 3: 'Did Okay', 2: 'Could Do More', 1: 'Took It Easy' },
