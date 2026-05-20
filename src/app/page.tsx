@@ -9,6 +9,7 @@ import { Lang, translations } from '@/i18n/translations';
 
 const STORAGE_KEY = 'attendance_records';
 const LANG_KEY = 'attendance_lang';
+const PAID_LEAVE_GRANTED_KEY = 'paid_leave_granted_days';
 
 function getToday(): string {
   const now = new Date();
@@ -57,6 +58,9 @@ export default function Home() {
   const [selectedPastRecord, setSelectedPastRecord] = useState<AttendanceRecord | null>(null);
   const [futurePaidLeaveDate, setFuturePaidLeaveDate] = useState<string>(getTomorrow());
   const [dismissedWarningIds, setDismissedWarningIds] = useState<Set<string>>(new Set());
+  const [grantedDays, setGrantedDays] = useState<number>(20);
+  const [editingGranted, setEditingGranted] = useState(false);
+  const [grantedInput, setGrantedInput] = useState('20');
 
   useEffect(() => {
     setMounted(true);
@@ -64,6 +68,11 @@ export default function Home() {
     if (storedRecords) setRecords(JSON.parse(storedRecords));
     const storedLang = localStorage.getItem(LANG_KEY) as Lang | null;
     if (storedLang) setLang(storedLang);
+    const storedGranted = localStorage.getItem(PAID_LEAVE_GRANTED_KEY);
+    if (storedGranted) {
+      const n = parseInt(storedGranted, 10);
+      if (!isNaN(n) && n >= 0) { setGrantedDays(n); setGrantedInput(String(n)); }
+    }
 
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
@@ -71,6 +80,9 @@ export default function Home() {
 
   const t = translations[lang];
   const today = getToday();
+  const currentYear = today.substring(0, 4);
+  const usedDays = records.filter((r) => r.isPaidLeave && r.date.startsWith(currentYear)).length;
+  const remainingDays = grantedDays - usedDays;
   const todayRecord = records.find((r) => r.date === today);
   const hasClockedIn = !!(todayRecord?.clockIn || todayRecord?.isPaidLeave);
   const hasClockedOut = !!todayRecord?.clockOut;
@@ -109,6 +121,14 @@ export default function Home() {
       isPaidLeave: true,
     };
     saveRecords([record, ...records]);
+  }
+
+  function handleSaveGrantedDays() {
+    const n = parseInt(grantedInput, 10);
+    if (isNaN(n) || n < 0) return;
+    setGrantedDays(n);
+    localStorage.setItem(PAID_LEAVE_GRANTED_KEY, String(n));
+    setEditingGranted(false);
   }
 
   function handleFuturePaidLeave() {
@@ -366,6 +386,93 @@ export default function Home() {
             {t.calendar.title}
           </h2>
           <CalendarView records={records} t={t} lang={lang} onUpdateRecord={handleUpdateRecord} />
+        </div>
+
+        {/* 有給残日数 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <span>🏖️</span> {t.paidLeaveBalance.title}
+            </h2>
+            {!editingGranted && (
+              <button
+                onClick={() => { setGrantedInput(String(grantedDays)); setEditingGranted(true); }}
+                className="text-xs font-semibold text-gray-400 hover:text-indigo-600 transition-colors border border-gray-200 hover:border-indigo-300 px-2.5 py-1 rounded-lg"
+              >
+                {t.paidLeaveBalance.editTitle}
+              </button>
+            )}
+          </div>
+
+          {mounted && (
+            <p className="text-xs text-gray-400 font-medium -mt-2">
+              {t.paidLeaveBalance.yearLabel(parseInt(currentYear, 10))}
+            </p>
+          )}
+
+          {/* 付与日数編集フォーム */}
+          {editingGranted && (
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min={0}
+                max={365}
+                value={grantedInput}
+                onChange={(e) => setGrantedInput(e.target.value)}
+                className="w-24 border border-gray-200 rounded-xl p-2 text-sm text-center focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              />
+              <span className="text-sm text-gray-500">{t.paidLeaveBalance.daysUnit}</span>
+              <button
+                onClick={handleSaveGrantedDays}
+                className="text-sm font-semibold bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors"
+              >
+                {t.paidLeaveBalance.save}
+              </button>
+              <button
+                onClick={() => setEditingGranted(false)}
+                className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {t.paidLeaveBalance.cancel}
+              </button>
+            </div>
+          )}
+
+          {/* 統計グリッド */}
+          {mounted && (
+            <div className="grid grid-cols-3 divide-x divide-gray-100 bg-gray-50 rounded-xl py-3">
+              <div className="text-center px-2">
+                <p className="text-[10px] text-gray-400 font-semibold mb-1">{t.paidLeaveBalance.granted}</p>
+                <p className="text-xl font-bold text-gray-700">{grantedDays}<span className="text-xs font-normal text-gray-400 ml-0.5">{t.paidLeaveBalance.daysUnit}</span></p>
+              </div>
+              <div className="text-center px-2">
+                <p className="text-[10px] text-green-500 font-semibold mb-1">{t.paidLeaveBalance.used}</p>
+                <p className="text-xl font-bold text-green-600">{usedDays}<span className="text-xs font-normal text-green-400 ml-0.5">{t.paidLeaveBalance.daysUnit}</span></p>
+              </div>
+              <div className="text-center px-2">
+                <p className={`text-[10px] font-semibold mb-1 ${remainingDays < 0 ? 'text-red-400' : 'text-indigo-400'}`}>
+                  {remainingDays < 0 ? t.paidLeaveBalance.overUsed : t.paidLeaveBalance.remaining}
+                </p>
+                <p className={`text-xl font-bold ${remainingDays < 0 ? 'text-red-500' : 'text-indigo-600'}`}>
+                  {Math.abs(remainingDays)}<span className={`text-xs font-normal ml-0.5 ${remainingDays < 0 ? 'text-red-300' : 'text-indigo-300'}`}>{t.paidLeaveBalance.daysUnit}</span>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* プログレスバー */}
+          {mounted && grantedDays > 0 && (
+            <div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${remainingDays < 0 ? 'bg-red-400' : 'bg-green-400'}`}
+                  style={{ width: `${Math.min((usedDays / grantedDays) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1 text-right">
+                {Math.round((usedDays / grantedDays) * 100)}% {t.paidLeaveBalance.used}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* 有給の事前登録 */}
