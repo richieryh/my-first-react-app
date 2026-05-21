@@ -56,6 +56,13 @@ export interface Translations {
   };
   moods: Record<MoodLevel, string>;
   efforts: Record<MoodLevel, string>;
+  breakTime: {
+    start: string;
+    end: string;
+    label: string;
+    onBreak: string;
+    actual: string;
+  };
   calendar: {
     title: string;
     weekdays: string[];
@@ -117,6 +124,13 @@ export const translations: Record<Lang, Translations> = {
     },
     moods: { 5: '絶好調', 4: '好調', 3: '普通', 2: '不調', 1: '絶不調' },
     efforts: { 5: '超頑張った', 4: '頑張った', 3: 'まあまあ', 2: 'もうちょっと', 1: 'あんまり' },
+    breakTime: {
+      start: '休憩開始',
+      end: '休憩終了',
+      label: '休憩時間',
+      onBreak: '休憩中',
+      actual: '実働時間',
+    },
     calendar: {
       title: 'カレンダー',
       weekdays: ['日', '月', '火', '水', '木', '金', '土'],
@@ -176,6 +190,13 @@ export const translations: Record<Lang, Translations> = {
     },
     moods: { 5: 'Amazing', 4: 'Good', 3: 'Okay', 2: 'Not Great', 1: 'Rough' },
     efforts: { 5: 'Crushed It', 4: 'Worked Hard', 3: 'Did Okay', 2: 'Could Do More', 1: 'Took It Easy' },
+    breakTime: {
+      start: 'Start Break',
+      end: 'End Break',
+      label: 'Break Time',
+      onBreak: 'On Break',
+      actual: 'Actual Work',
+    },
     calendar: {
       title: 'Calendar',
       weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],

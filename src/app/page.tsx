@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import MoodSelector from '@/components/MoodSelector';
 import CalendarView from '@/components/CalendarView';
 import RecordDetailModal from '@/components/RecordDetailModal';
-import { AttendanceRecord, MoodLevel, MOOD_OPTIONS, EFFORT_OPTIONS } from '@/types/attendance';
+import { AttendanceRecord, MoodLevel, MOOD_OPTIONS, EFFORT_OPTIONS, calcBreakMinutes } from '@/types/attendance';
 import { Lang, translations } from '@/i18n/translations';
 
 const STORAGE_KEY = 'attendance_records';
@@ -44,6 +44,13 @@ function formatDate(dateStr: string, lang: Lang): string {
 
 function getEmoji(level: MoodLevel, options: typeof MOOD_OPTIONS): string {
   return options.find((o) => o.level === level)!.emoji;
+}
+
+function formatMinutes(mins: number, lang: Lang): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (lang === 'ja') return h > 0 ? `${h}時間${m}分` : `${m}分`;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
 export default function Home() {
@@ -93,6 +100,30 @@ export default function Home() {
     (r) => r.clockIn && !r.clockOut && !r.isPaidLeave && !dismissedWarningIds.has(r.id)
   );
   const futurePaidLeaveHasRecord = !!records.find((r) => r.date === futurePaidLeaveDate);
+
+  const isOnBreak = !!(todayRecord?.breaks?.some((b) => !b.end));
+
+  function handleBreakStart() {
+    if (!todayRecord) return;
+    const updated: AttendanceRecord = {
+      ...todayRecord,
+      breaks: [...(todayRecord.breaks ?? []), { start: new Date().toISOString() }],
+    };
+    saveRecords(records.map((r) => (r.id === todayRecord.id ? updated : r)));
+  }
+
+  function handleBreakEnd() {
+    if (!todayRecord?.breaks) return;
+    const updated: AttendanceRecord = {
+      ...todayRecord,
+      breaks: todayRecord.breaks.map((b, i) =>
+        i === todayRecord.breaks!.length - 1 && !b.end
+          ? { ...b, end: new Date().toISOString() }
+          : b
+      ),
+    };
+    saveRecords(records.map((r) => (r.id === todayRecord.id ? updated : r)));
+  }
 
   function toggleLang() {
     const next: Lang = lang === 'ja' ? 'en' : 'ja';
@@ -307,6 +338,27 @@ export default function Home() {
               </div>
             </div>
 
+            {/* 休憩ボタン */}
+            <button
+              onClick={isOnBreak ? handleBreakEnd : handleBreakStart}
+              className={`w-full py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${
+                isOnBreak
+                  ? 'bg-orange-500 text-white hover:bg-orange-600'
+                  : 'bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100'
+              }`}
+            >
+              <span>{isOnBreak ? '🔙' : '☕'}</span>
+              {isOnBreak ? t.breakTime.end : t.breakTime.start}
+              {isOnBreak && todayRecord.breaks && (
+                <span className="text-xs opacity-75 ml-1">
+                  ({formatMinutes(
+                    Math.floor((now.getTime() - new Date(todayRecord.breaks[todayRecord.breaks.length - 1].start).getTime()) / 60000),
+                    lang
+                  )})
+                </span>
+              )}
+            </button>
+
             <div className="bg-white rounded-2xl shadow-sm p-6 space-y-5">
               <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                 <span>🌙</span> {t.clockOut.title}
@@ -377,6 +429,31 @@ export default function Home() {
                 </p>
               </div>
             </div>
+            {todayRecord.breaks && todayRecord.breaks.filter((b) => b.end).length > 0 && (() => {
+              const breakMins = calcBreakMinutes(todayRecord.breaks);
+              const totalMins = Math.floor(
+                (new Date(todayRecord.clockOut.time).getTime() - new Date(todayRecord.clockIn.time).getTime()) / 60000
+              );
+              const actualMins = totalMins - breakMins;
+              return (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center justify-between bg-orange-50 rounded-xl px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span>☕</span>
+                      <p className="text-sm text-orange-700 font-medium">{t.breakTime.label}</p>
+                    </div>
+                    <p className="text-sm font-bold text-orange-700">{formatMinutes(breakMins, lang)}</p>
+                  </div>
+                  <div className="flex items-center justify-between bg-indigo-50 rounded-xl px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span>⏱️</span>
+                      <p className="text-sm text-indigo-700 font-medium">{t.breakTime.actual}</p>
+                    </div>
+                    <p className="text-sm font-bold text-indigo-700">{formatMinutes(actualMins, lang)}</p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

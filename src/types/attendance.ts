@@ -28,10 +28,24 @@ export interface ClockEntry {
   message: string;
 }
 
+export interface BreakEntry {
+  start: string; // ISO string
+  end?: string;  // ISO string (undefined = 休憩中)
+}
+
+export function calcBreakMinutes(breaks?: BreakEntry[]): number {
+  if (!breaks) return 0;
+  return breaks.reduce((sum, b) => {
+    if (!b.end) return sum;
+    return sum + Math.floor((new Date(b.end).getTime() - new Date(b.start).getTime()) / 60000);
+  }, 0);
+}
+
 export interface AttendanceRecord {
   id: string;
   date: string; // YYYY-MM-DD
   isPaidLeave?: boolean;
   clockIn?: ClockEntry;
   clockOut?: ClockEntry;
+  breaks?: BreakEntry[];
 }
