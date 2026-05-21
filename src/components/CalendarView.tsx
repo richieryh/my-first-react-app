@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AttendanceRecord, MOOD_OPTIONS, EFFORT_OPTIONS, MoodLevel } from '@/types/attendance';
+import { AttendanceRecord, MOOD_OPTIONS, EFFORT_OPTIONS, MoodLevel, calcBreakMinutes } from '@/types/attendance';
 import { Lang, Translations } from '@/i18n/translations';
 import HolidayJP from '@holiday-jp/holiday_jp';
 import RecordDetailModal from '@/components/RecordDetailModal';
@@ -118,7 +118,7 @@ export default function CalendarView({ records, t, lang, onUpdateRecord }: Props
   const paidLeaveCount = allMonthRecords.filter((r) => r.isPaidLeave).length;
   const totalMinutes = monthRecords.reduce((sum, r) => {
     const diff = new Date(r.clockOut!.time).getTime() - new Date(r.clockIn!.time).getTime();
-    return sum + Math.floor(diff / 60000);
+    return sum + Math.floor(diff / 60000) - calcBreakMinutes(r.breaks);
   }, 0);
   const totalHours = Math.floor(totalMinutes / 60);
   const totalMins = totalMinutes % 60;

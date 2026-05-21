@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AttendanceRecord, MOOD_OPTIONS, EFFORT_OPTIONS, MoodLevel } from '@/types/attendance';
+import { AttendanceRecord, MOOD_OPTIONS, EFFORT_OPTIONS, MoodLevel, calcBreakMinutes } from '@/types/attendance';
 import { Lang, Translations } from '@/i18n/translations';
 import MoodSelector from '@/components/MoodSelector';
 
@@ -24,6 +24,13 @@ function formatTime(isoString: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function formatMinutes(mins: number, lang: Lang): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (lang === 'ja') return h > 0 ? `${h}時間${m}分` : `${m}分`;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
 function formatDate(dateStr: string, lang: Lang): string {
@@ -180,6 +187,36 @@ export default function RecordDetailModal({
                       </div>
                       <p className="text-sm text-gray-600">&ldquo;{record.clockOut.message}&rdquo;</p>
                     </div>
+                    {record.breaks && record.breaks.filter((b) => b.end).length > 0 && (
+                      <div className="bg-orange-50 rounded-xl p-4">
+                        <p className="text-xs text-orange-600 font-semibold mb-2">
+                          ☕ {t.breakTime.label}
+                        </p>
+                        <div className="space-y-1">
+                          {record.breaks.filter((b) => b.end).map((b, i) => (
+                            <div key={i} className="flex items-center justify-between text-sm">
+                              <span className="text-gray-500">
+                                {formatTime(b.start)} → {formatTime(b.end!)}
+                              </span>
+                              <span className="font-medium text-orange-700">
+                                {formatMinutes(
+                                  Math.floor((new Date(b.end!).getTime() - new Date(b.start).getTime()) / 60000),
+                                  lang
+                                )}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        {record.breaks.filter((b) => b.end).length > 1 && (
+                          <div className="mt-2 pt-2 border-t border-orange-100 flex items-center justify-between">
+                            <span className="text-xs text-orange-600 font-semibold">合計</span>
+                            <span className="text-sm font-bold text-orange-700">
+                              {formatMinutes(calcBreakMinutes(record.breaks), lang)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="bg-purple-50 rounded-xl p-4 space-y-3">
