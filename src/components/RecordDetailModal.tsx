@@ -59,6 +59,15 @@ export default function RecordDetailModal({
   const [newClockInMood, setNewClockInMood] = useState<MoodLevel | null>(null);
   const [newClockInMessage, setNewClockInMessage] = useState('');
 
+  // 既存レコードの編集用
+  const [isEditing, setIsEditing] = useState(false);
+  const [editClockInTime, setEditClockInTime] = useState('');
+  const [editClockInMood, setEditClockInMood] = useState<MoodLevel | null>(null);
+  const [editClockInMessage, setEditClockInMessage] = useState('');
+  const [editClockOutTime, setEditClockOutTime] = useState('');
+  const [editClockOutMood, setEditClockOutMood] = useState<MoodLevel | null>(null);
+  const [editClockOutMessage, setEditClockOutMessage] = useState('');
+
   useEffect(() => {
     setRetroTime('');
     setRetroMood(null);
@@ -66,7 +75,49 @@ export default function RecordDetailModal({
     setNewClockInTime('');
     setNewClockInMood(null);
     setNewClockInMessage('');
+    setIsEditing(false);
   }, [date]);
+
+  function formatTimeForInput(isoString: string): string {
+    const d = new Date(isoString);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function handleStartEdit() {
+    if (!record) return;
+    if (record.clockIn) {
+      setEditClockInTime(formatTimeForInput(record.clockIn.time));
+      setEditClockInMood(record.clockIn.mood);
+      setEditClockInMessage(record.clockIn.message);
+    }
+    if (record.clockOut) {
+      setEditClockOutTime(formatTimeForInput(record.clockOut.time));
+      setEditClockOutMood(record.clockOut.mood);
+      setEditClockOutMessage(record.clockOut.message);
+    }
+    setIsEditing(true);
+  }
+
+  function handleSaveEdit() {
+    if (!record) return;
+    const updated: AttendanceRecord = { ...record };
+    if (record.clockIn && editClockInTime && editClockInMood) {
+      updated.clockIn = {
+        time: new Date(`${date}T${editClockInTime}:00`).toISOString(),
+        mood: editClockInMood,
+        message: editClockInMessage.trim() || t.moods[editClockInMood],
+      };
+    }
+    if (record.clockOut && editClockOutTime && editClockOutMood) {
+      updated.clockOut = {
+        time: new Date(`${date}T${editClockOutTime}:00`).toISOString(),
+        mood: editClockOutMood,
+        message: editClockOutMessage.trim() || t.efforts[editClockOutMood],
+      };
+    }
+    onUpdateRecord(updated);
+    onClose();
+  }
 
   function handleRetroClockOut() {
     if (!record || !retroTime || !retroMood) return;
@@ -154,7 +205,92 @@ export default function RecordDetailModal({
                 <span className="text-5xl">🏖️</span>
                 <p className="font-bold text-green-700 text-lg">{t.status.paidLeave}</p>
               </div>
+            ) : isEditing ? (
+              /* ── 編集モード ── */
+              <>
+                {record.clockIn && (
+                  <div className="bg-indigo-50 rounded-xl p-4 space-y-3">
+                    <p className="text-xs text-indigo-600 font-semibold">🌅 {t.status.clockInLabel}</p>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">{t.status.retroClockInTime}</p>
+                      <input
+                        type="time"
+                        value={editClockInTime}
+                        onChange={(e) => setEditClockInTime(e.target.value)}
+                        className="w-full border border-indigo-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-2">{t.clockIn.moodQuestion}</p>
+                      <MoodSelector
+                        selected={editClockInMood}
+                        onChange={setEditClockInMood}
+                        options={MOOD_OPTIONS}
+                        labels={t.moods}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">{t.clockIn.messageLabel}</p>
+                      <textarea
+                        value={editClockInMessage}
+                        onChange={(e) => setEditClockInMessage(e.target.value)}
+                        placeholder={t.clockIn.messagePlaceholder}
+                        rows={2}
+                        className="w-full border border-indigo-200 rounded-xl p-2 text-sm resize-none focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                      />
+                    </div>
+                  </div>
+                )}
+                {record.clockOut && (
+                  <div className="bg-purple-50 rounded-xl p-4 space-y-3">
+                    <p className="text-xs text-purple-600 font-semibold">🌙 {t.status.clockOutLabel}</p>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">{t.status.retroClockOutTime}</p>
+                      <input
+                        type="time"
+                        value={editClockOutTime}
+                        onChange={(e) => setEditClockOutTime(e.target.value)}
+                        className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-2">{t.clockOut.moodQuestion}</p>
+                      <MoodSelector
+                        selected={editClockOutMood}
+                        onChange={setEditClockOutMood}
+                        options={EFFORT_OPTIONS}
+                        labels={t.efforts}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">{t.clockOut.messageLabel}</p>
+                      <textarea
+                        value={editClockOutMessage}
+                        onChange={(e) => setEditClockOutMessage(e.target.value)}
+                        placeholder={t.clockOut.messagePlaceholder}
+                        rows={2}
+                        className="w-full border border-purple-200 rounded-xl p-2 text-sm resize-none focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="flex-1 border border-gray-300 text-gray-600 py-2 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+                  >
+                    {t.status.editCancel}
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    className="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors"
+                  >
+                    {t.status.editSave}
+                  </button>
+                </div>
+              </>
             ) : (
+              /* ── 表示モード ── */
               <>
                 {record.clockIn && (
                   <div className="bg-indigo-50 rounded-xl p-4">
@@ -217,48 +353,64 @@ export default function RecordDetailModal({
                         )}
                       </div>
                     )}
+                    <button
+                      onClick={handleStartEdit}
+                      className="w-full border border-gray-300 text-gray-500 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      ✏️ {t.status.editButton}
+                    </button>
                   </>
                 ) : (
-                  <div className="bg-purple-50 rounded-xl p-4 space-y-3">
-                    <p className="text-xs text-purple-600 font-semibold">
-                      🌙 {t.status.retroClockOut}
-                    </p>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">{t.status.retroClockOutTime}</p>
-                      <input
-                        type="time"
-                        value={retroTime}
-                        onChange={(e) => setRetroTime(e.target.value)}
-                        className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
-                      />
+                  <>
+                    {record.clockIn && (
+                      <button
+                        onClick={handleStartEdit}
+                        className="w-full border border-gray-300 text-gray-500 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                      >
+                        ✏️ {t.status.editButton}
+                      </button>
+                    )}
+                    <div className="bg-purple-50 rounded-xl p-4 space-y-3">
+                      <p className="text-xs text-purple-600 font-semibold">
+                        🌙 {t.status.retroClockOut}
+                      </p>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">{t.status.retroClockOutTime}</p>
+                        <input
+                          type="time"
+                          value={retroTime}
+                          onChange={(e) => setRetroTime(e.target.value)}
+                          className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">{t.clockOut.moodQuestion}</p>
+                        <MoodSelector
+                          selected={retroMood}
+                          onChange={setRetroMood}
+                          options={EFFORT_OPTIONS}
+                          labels={t.efforts}
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">{t.clockOut.messageLabel}</p>
+                        <textarea
+                          value={retroMessage}
+                          onChange={(e) => setRetroMessage(e.target.value)}
+                          placeholder={t.clockOut.messagePlaceholder}
+                          rows={2}
+                          className="w-full border border-purple-200 rounded-xl p-2 text-sm resize-none focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                        />
+                      </div>
+                      <button
+                        onClick={handleRetroClockOut}
+                        disabled={!retroTime || !retroMood}
+                        className="w-full bg-purple-600 text-white py-2 rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors"
+                      >
+                        {t.status.retroClockOutSave}
+                      </button>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-2">{t.clockOut.moodQuestion}</p>
-                      <MoodSelector
-                        selected={retroMood}
-                        onChange={setRetroMood}
-                        options={EFFORT_OPTIONS}
-                        labels={t.efforts}
-                      />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">{t.clockOut.messageLabel}</p>
-                      <textarea
-                        value={retroMessage}
-                        onChange={(e) => setRetroMessage(e.target.value)}
-                        placeholder={t.clockOut.messagePlaceholder}
-                        rows={2}
-                        className="w-full border border-purple-200 rounded-xl p-2 text-sm resize-none focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
-                      />
-                    </div>
-                    <button
-                      onClick={handleRetroClockOut}
-                      disabled={!retroTime || !retroMood}
-                      className="w-full bg-purple-600 text-white py-2 rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors"
-                    >
-                      {t.status.retroClockOutSave}
-                    </button>
-                  </div>
+                  </>
                 )}
               </>
             )

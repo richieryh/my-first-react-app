@@ -41,6 +41,9 @@ export interface Translations {
     futurePaidLeaveAlreadyExists: string;
     missedClockOutTitle: string;
     missedClockOutFix: string;
+    editButton: string;
+    editSave: string;
+    editCancel: string;
   };
   paidLeaveBalance: {
     title: string;
@@ -109,6 +112,9 @@ export const translations: Record<Lang, Translations> = {
       futurePaidLeaveAlreadyExists: 'この日付はすでに記録があります',
       missedClockOutTitle: 'の退勤が記録されていません',
       missedClockOutFix: '退勤を入力する',
+      editButton: '時刻を修正する',
+      editSave: '修正を保存',
+      editCancel: 'キャンセル',
     },
     paidLeaveBalance: {
       title: '有給残日数',
@@ -175,6 +181,9 @@ export const translations: Record<Lang, Translations> = {
       futurePaidLeaveAlreadyExists: 'A record already exists for this date',
       missedClockOutTitle: 'clock-out is not recorded',
       missedClockOutFix: 'Enter Clock-out',
+      editButton: 'Edit Times',
+      editSave: 'Save Changes',
+      editCancel: 'Cancel',
     },
     paidLeaveBalance: {
       title: 'Paid Leave Balance',
