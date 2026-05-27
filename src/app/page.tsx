@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import MoodSelector from '@/components/MoodSelector';
 import CalendarView from '@/components/CalendarView';
 import RecordDetailModal from '@/components/RecordDetailModal';
@@ -54,33 +54,41 @@ function formatMinutes(mins: number, lang: Lang): string {
 }
 
 export default function Home() {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [lang, setLang] = useState<Lang>('ja');
+  const [records, setRecords] = useState<AttendanceRecord[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  });
+  const [lang, setLang] = useState<Lang>(() => {
+    if (typeof window === 'undefined') return 'ja';
+    return (localStorage.getItem(LANG_KEY) as Lang) || 'ja';
+  });
   const [clockInMood, setClockInMood] = useState<MoodLevel | null>(null);
   const [clockInMessage, setClockInMessage] = useState('');
   const [clockOutMood, setClockOutMood] = useState<MoodLevel | null>(null);
   const [clockOutMessage, setClockOutMessage] = useState('');
   const [now, setNow] = useState(new Date());
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [selectedPastRecord, setSelectedPastRecord] = useState<AttendanceRecord | null>(null);
   const [futurePaidLeaveDate, setFuturePaidLeaveDate] = useState<string>(getTomorrow());
   const [dismissedWarningIds, setDismissedWarningIds] = useState<Set<string>>(new Set());
-  const [grantedDays, setGrantedDays] = useState<number>(20);
+  const [grantedDays, setGrantedDays] = useState<number>(() => {
+    if (typeof window === 'undefined') return 20;
+    const stored = localStorage.getItem(PAID_LEAVE_GRANTED_KEY);
+    if (!stored) return 20;
+    const n = parseInt(stored, 10);
+    return !isNaN(n) && n >= 0 ? n : 20;
+  });
   const [editingGranted, setEditingGranted] = useState(false);
-  const [grantedInput, setGrantedInput] = useState('20');
+  const [grantedInput, setGrantedInput] = useState<string>(() => {
+    if (typeof window === 'undefined') return '20';
+    const stored = localStorage.getItem(PAID_LEAVE_GRANTED_KEY);
+    if (!stored) return '20';
+    const n = parseInt(stored, 10);
+    return !isNaN(n) && n >= 0 ? String(n) : '20';
+  });
 
   useEffect(() => {
-    setMounted(true);
-    const storedRecords = localStorage.getItem(STORAGE_KEY);
-    if (storedRecords) setRecords(JSON.parse(storedRecords));
-    const storedLang = localStorage.getItem(LANG_KEY) as Lang | null;
-    if (storedLang) setLang(storedLang);
-    const storedGranted = localStorage.getItem(PAID_LEAVE_GRANTED_KEY);
-    if (storedGranted) {
-      const n = parseInt(storedGranted, 10);
-      if (!isNaN(n) && n >= 0) { setGrantedDays(n); setGrantedInput(String(n)); }
-    }
-
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -652,6 +660,7 @@ export default function Home() {
         {/* Past RECORDSの詳細モーダル */}
         {selectedPastRecord && (
           <RecordDetailModal
+            key={selectedPastRecord.date}
             record={selectedPastRecord}
             date={selectedPastRecord.date}
             t={t}

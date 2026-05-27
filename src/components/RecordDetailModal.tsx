@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AttendanceRecord, MOOD_OPTIONS, EFFORT_OPTIONS, MoodLevel, calcBreakMinutes } from '@/types/attendance';
 import { Lang, Translations } from '@/i18n/translations';
 import MoodSelector from '@/components/MoodSelector';
@@ -67,16 +67,6 @@ export default function RecordDetailModal({
   const [editClockOutTime, setEditClockOutTime] = useState('');
   const [editClockOutMood, setEditClockOutMood] = useState<MoodLevel | null>(null);
   const [editClockOutMessage, setEditClockOutMessage] = useState('');
-
-  useEffect(() => {
-    setRetroTime('');
-    setRetroMood(null);
-    setRetroMessage('');
-    setNewClockInTime('');
-    setNewClockInMood(null);
-    setNewClockInMessage('');
-    setIsEditing(false);
-  }, [date]);
 
   function formatTimeForInput(isoString: string): string {
     const d = new Date(isoString);
