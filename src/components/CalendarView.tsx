@@ -100,6 +100,25 @@ export default function CalendarView({ records, t, lang, onUpdateRecord }: Props
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
+  // 7日ごとの週に分割し、端数は null でパディング
+  const weeks: (number | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    const week = cells.slice(i, i + 7);
+    while (week.length < 7) week.push(null);
+    weeks.push(week);
+  }
+
+  function calcWeekMinutes(week: (number | null)[]): number {
+    return week.reduce<number>((sum, day) => {
+      if (!day) return sum;
+      const dateStr = toDateStr(viewYear, viewMonth, day);
+      const record = recordMap.get(dateStr);
+      if (!record?.clockIn || !record?.clockOut) return sum;
+      const diff = new Date(record.clockOut.time).getTime() - new Date(record.clockIn.time).getTime();
+      return sum + Math.floor(diff / 60000) - calcBreakMinutes(record.breaks);
+    }, 0);
+  }
+
   const selectedRecord = selectedDate ? recordMap.get(selectedDate) : null;
 
   // 表示月の祝日マップ: dateStr -> holiday name
@@ -156,7 +175,7 @@ export default function CalendarView({ records, t, lang, onUpdateRecord }: Props
         </div>
 
         {/* 曜日ヘッダー */}
-        <div className="grid grid-cols-7 mb-1">
+        <div className="grid grid-cols-8 mb-1">
           {t.calendar.weekdays.map((day, i) => (
             <div
               key={day}
@@ -167,6 +186,9 @@ export default function CalendarView({ records, t, lang, onUpdateRecord }: Props
               {day}
             </div>
           ))}
+          <div className="text-center text-xs font-semibold py-1 text-indigo-400">
+            {lang === 'ja' ? '週計' : 'Wk'}
+          </div>
         </div>
 
         {/* 月次集計 */}
@@ -205,85 +227,106 @@ export default function CalendarView({ records, t, lang, onUpdateRecord }: Props
         )}
 
         {/* カレンダーグリッド */}
-        <div className="grid grid-cols-7 gap-0.5">
-          {cells.map((day, i) => {
-            if (day === null) return <div key={`empty-${i}`} />;
-
-            const dateStr = toDateStr(viewYear, viewMonth, day);
-            const record = recordMap.get(dateStr);
-            const isToday = dateStr === todayStr;
-            const dayOfWeek = (firstDayOfWeek + day - 1) % 7;
-            const holidayName = holidayMap.get(dateStr);
-            const isHoliday = !!holidayName;
-
-            const isWeekday = dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday;
-
-            const cellBg = getCellBackground(record, isToday);
-
+        <div className="space-y-0.5">
+          {weeks.map((week, weekIdx) => {
+            const weekMinutes = calcWeekMinutes(week);
+            const weekHours = Math.floor(weekMinutes / 60);
+            const weekMins = weekMinutes % 60;
             return (
-              <div
-                key={dateStr}
-                onClick={() => isWeekday && setSelectedDate(dateStr)}
-                style={cellBg ? { background: cellBg } : undefined}
-                className={`rounded-lg p-1 min-h-14 flex flex-col ${isToday ? 'ring-2 ring-indigo-400' : ''} ${isWeekday ? 'cursor-pointer hover:shadow-sm transition-shadow' : ''}`}
-              >
-                {/* 日付番号 */}
-                <span
-                  className={`text-xs font-semibold w-5 h-5 flex items-center justify-center rounded-full mb-0.5 ${
-                    isToday
-                      ? 'bg-indigo-600 text-white'
-                      : dayOfWeek === 0 || isHoliday
-                      ? 'text-red-400'
-                      : dayOfWeek === 6
-                      ? 'text-blue-400'
-                      : 'text-gray-600'
-                  }`}
-                >
-                  {day}
-                </span>
-                {/* 祝日名 */}
-                {isHoliday && (
-                  <span className="text-[9px] leading-tight text-red-400 font-medium break-all">
-                    {holidayName}
-                  </span>
-                )}
+              <div key={weekIdx} className="grid grid-cols-8 gap-0.5">
+                {week.map((day, dayIdx) => {
+                  if (day === null) return <div key={`empty-${weekIdx}-${dayIdx}`} />;
 
-                {/* 打刻情報 */}
-                {record && (
-                  <div className="space-y-0.5">
-                    {record.isPaidLeave ? (
-                      <div className="flex items-center gap-0.5">
-                        <span className="text-xs leading-none">🏖️</span>
-                        <span className="text-[10px] text-green-500 leading-none font-medium">
-                          {lang === 'ja' ? '有給' : 'PL'}
+                  const dateStr = toDateStr(viewYear, viewMonth, day);
+                  const record = recordMap.get(dateStr);
+                  const isToday = dateStr === todayStr;
+                  const dayOfWeek = (firstDayOfWeek + day - 1) % 7;
+                  const holidayName = holidayMap.get(dateStr);
+                  const isHoliday = !!holidayName;
+                  const isWeekday = dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday;
+                  const cellBg = getCellBackground(record, isToday);
+
+                  return (
+                    <div
+                      key={dateStr}
+                      onClick={() => isWeekday && setSelectedDate(dateStr)}
+                      style={cellBg ? { background: cellBg } : undefined}
+                      className={`rounded-lg p-1 min-h-14 flex flex-col ${isToday ? 'ring-2 ring-indigo-400' : ''} ${isWeekday ? 'cursor-pointer hover:shadow-sm transition-shadow' : ''}`}
+                    >
+                      {/* 日付番号 */}
+                      <span
+                        className={`text-xs font-semibold w-5 h-5 flex items-center justify-center rounded-full mb-0.5 ${
+                          isToday
+                            ? 'bg-indigo-600 text-white'
+                            : dayOfWeek === 0 || isHoliday
+                            ? 'text-red-400'
+                            : dayOfWeek === 6
+                            ? 'text-blue-400'
+                            : 'text-gray-600'
+                        }`}
+                      >
+                        {day}
+                      </span>
+                      {/* 祝日名 */}
+                      {isHoliday && (
+                        <span className="text-[9px] leading-tight text-red-400 font-medium break-all">
+                          {holidayName}
                         </span>
-                      </div>
-                    ) : (
-                      <>
-                        {record.clockIn && (
-                          <div className="flex items-center gap-0.5">
-                            <span className="text-xs leading-none">
-                              {getEmoji(record.clockIn.mood, MOOD_OPTIONS)}
-                            </span>
-                            <span className="text-[10px] text-indigo-500 leading-none font-medium">
-                              {formatTime(record.clockIn.time)}
-                            </span>
-                          </div>
-                        )}
-                        {record.clockOut && (
-                          <div className="flex items-center gap-0.5">
-                            <span className="text-xs leading-none">
-                              {getEmoji(record.clockOut.mood, EFFORT_OPTIONS)}
-                            </span>
-                            <span className="text-[10px] text-purple-500 leading-none font-medium">
-                              {formatTime(record.clockOut.time)}
-                            </span>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
+                      )}
+                      {/* 打刻情報 */}
+                      {record && (
+                        <div className="space-y-0.5">
+                          {record.isPaidLeave ? (
+                            <div className="flex items-center gap-0.5">
+                              <span className="text-xs leading-none">🏖️</span>
+                              <span className="text-[10px] text-green-500 leading-none font-medium">
+                                {lang === 'ja' ? '有給' : 'PL'}
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              {record.clockIn && (
+                                <div className="flex items-center gap-0.5">
+                                  <span className="text-xs leading-none">
+                                    {getEmoji(record.clockIn.mood, MOOD_OPTIONS)}
+                                  </span>
+                                  <span className="text-[10px] text-indigo-500 leading-none font-medium">
+                                    {formatTime(record.clockIn.time)}
+                                  </span>
+                                </div>
+                              )}
+                              {record.clockOut && (
+                                <div className="flex items-center gap-0.5">
+                                  <span className="text-xs leading-none">
+                                    {getEmoji(record.clockOut.mood, EFFORT_OPTIONS)}
+                                  </span>
+                                  <span className="text-[10px] text-purple-500 leading-none font-medium">
+                                    {formatTime(record.clockOut.time)}
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {/* 週次合計セル */}
+                <div className="rounded-lg min-h-14 flex flex-col items-center justify-center bg-indigo-50">
+                  {weekMinutes > 0 && (
+                    <>
+                      <span className="text-[11px] font-bold text-indigo-600 leading-tight">
+                        {weekHours}h
+                      </span>
+                      {weekMins > 0 && (
+                        <span className="text-[10px] text-indigo-400 leading-tight">
+                          {weekMins}m
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}
