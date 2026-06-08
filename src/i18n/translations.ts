@@ -70,6 +70,14 @@ export interface Translations {
     title: string;
     weekdays: string[];
   };
+  toast: {
+    clockIn: string;
+    clockOut: string;
+    paidLeave: string;
+    futurePaidLeave: string;
+    breakStart: string;
+    breakEnd: string;
+  };
 }
 
 export const translations: Record<Lang, Translations> = {
@@ -141,6 +149,14 @@ export const translations: Record<Lang, Translations> = {
       title: 'カレンダー',
       weekdays: ['日', '月', '火', '水', '木', '金', '土'],
     },
+    toast: {
+      clockIn: '出勤を記録しました',
+      clockOut: '退勤を記録しました',
+      paidLeave: '有給を取得しました',
+      futurePaidLeave: '有給を事前登録しました',
+      breakStart: '休憩を開始しました',
+      breakEnd: '休憩を終了しました',
+    },
   },
   en: {
     appName: 'Attendance',
@@ -209,6 +225,14 @@ export const translations: Record<Lang, Translations> = {
     calendar: {
       title: 'Calendar',
       weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    },
+    toast: {
+      clockIn: 'Clocked in successfully',
+      clockOut: 'Clocked out successfully',
+      paidLeave: 'Paid leave recorded',
+      futurePaidLeave: 'Leave pre-registered',
+      breakStart: 'Break started',
+      breakEnd: 'Break ended',
     },
   },
 };
