@@ -6,6 +6,7 @@ import CalendarView from '@/components/CalendarView';
 import RecordDetailModal from '@/components/RecordDetailModal';
 import { AttendanceRecord, MoodLevel, MOOD_OPTIONS, EFFORT_OPTIONS, calcBreakMinutes } from '@/types/attendance';
 import { Lang, translations } from '@/i18n/translations';
+import Toast, { ToastMessage, ToastType } from '@/components/Toast';
 
 const STORAGE_KEY = 'attendance_records';
 const LANG_KEY = 'attendance_lang';
@@ -79,6 +80,7 @@ export default function Home() {
     const n = parseInt(stored, 10);
     return !isNaN(n) && n >= 0 ? n : 20;
   });
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [editingGranted, setEditingGranted] = useState(false);
   const [grantedInput, setGrantedInput] = useState<string>(() => {
     if (typeof window === 'undefined') return '20';
@@ -118,6 +120,7 @@ export default function Home() {
       breaks: [...(todayRecord.breaks ?? []), { start: new Date().toISOString() }],
     };
     saveRecords(records.map((r) => (r.id === todayRecord.id ? updated : r)));
+    showToast(t.toast.breakStart, 'info');
   }
 
   function handleBreakEnd() {
@@ -131,6 +134,16 @@ export default function Home() {
       ),
     };
     saveRecords(records.map((r) => (r.id === todayRecord.id ? updated : r)));
+    showToast(t.toast.breakEnd, 'info');
+  }
+
+  function showToast(message: string, type: ToastType = 'success') {
+    const id = crypto.randomUUID();
+    setToasts((prev) => [...prev, { id, message, type }]);
+  }
+
+  function dismissToast(id: string) {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   }
 
   function toggleLang() {
@@ -160,6 +173,7 @@ export default function Home() {
       isPaidLeave: true,
     };
     saveRecords([record, ...records]);
+    showToast(t.toast.paidLeave);
   }
 
   function handleSaveGrantedDays() {
@@ -179,6 +193,7 @@ export default function Home() {
     };
     saveRecords([record, ...records]);
     setFuturePaidLeaveDate(getTomorrow());
+    showToast(t.toast.futurePaidLeave);
   }
 
   function handleClockIn() {
@@ -195,6 +210,7 @@ export default function Home() {
     saveRecords([record, ...records]);
     setClockInMood(null);
     setClockInMessage('');
+    showToast(t.toast.clockIn);
   }
 
   function handleClockOut() {
@@ -210,6 +226,7 @@ export default function Home() {
     saveRecords(records.map((r) => (r.id === todayRecord.id ? updated : r)));
     setClockOutMood(null);
     setClockOutMessage('');
+    showToast(t.toast.clockOut);
   }
 
   return (
@@ -656,6 +673,9 @@ export default function Home() {
             ))}
           </div>
         )}
+
+        {/* トースト通知 */}
+        <Toast toasts={toasts} onDismiss={dismissToast} />
 
         {/* Past RECORDSの詳細モーダル */}
         {selectedPastRecord && (
